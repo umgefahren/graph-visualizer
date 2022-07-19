@@ -1,6 +1,6 @@
 use std::{error::Error, time::Instant};
 
-use crate::{io::read_all, model::Coordinates, sim::SimulationState};
+use crate::{io::read_all, sim::SimulationState};
 
 pub(crate) mod io;
 pub(crate) mod model;
