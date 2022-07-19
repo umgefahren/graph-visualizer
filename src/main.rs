@@ -1,9 +1,10 @@
-use std::{error::Error, time::Instant};
+use std::{error::Error, time::Instant, io::Write};
 
 use crate::{io::read_all, sim::SimulationState};
 
 pub(crate) mod io;
 pub(crate) mod model;
+pub(crate) mod render;
 pub(crate) mod sim;
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -14,9 +15,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     let state = SimulationState::new(nodes, relations);
 
     let start = Instant::now();
-    let last_change = state.run_n_steps(100)?;
+    let last_change = state.run_n_steps(10000)?;
     let elapsed = start.elapsed();
     println!("Elapsed => {:?} Last Change => {last_change}", elapsed);
+
+    let rendered = state.render(1000.0, 1000.0);
+
+    let mut out_file = std::fs::File::create("out.svg")?;
+    out_file.write_all(rendered.as_bytes())?;
 
     Ok(())
 }

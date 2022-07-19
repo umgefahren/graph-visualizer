@@ -15,7 +15,7 @@ pub struct Vector2D {
 impl Vector2D {
     const ZERO: Self = Vector2D { x: 0.0, y: 0.0 };
 
-    #[inline]
+    #[inline(always)]
     fn scale(self, lambda: f64) -> Self {
         Self {
             x: self.x * lambda,
@@ -23,18 +23,18 @@ impl Vector2D {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn length(self) -> f64 {
         (self.x.powi(2) + self.y.powi(2)).sqrt()
     }
 
-    #[inline]
+    #[inline(always)]
     fn normalize(self) -> Self {
         let length = self.length();
         self / length
     }
 
-    #[inline]
+    #[inline(always)]
     fn travel(self, t: f64) -> Self {
         self * 0.5 * t.powi(2)
     }
@@ -43,7 +43,7 @@ impl Vector2D {
 impl Add for Vector2D {
     type Output = Self;
 
-    #[inline]
+    #[inline(always)]
     fn add(self, rhs: Self) -> Self::Output {
         Self {
             x: self.x + rhs.x,
@@ -54,7 +54,7 @@ impl Add for Vector2D {
 
 impl Mul<f64> for Vector2D {
     type Output = Vector2D;
-    #[inline]
+    #[inline(always)]
     fn mul(self, rhs: f64) -> Self::Output {
         self.scale(rhs)
     }
@@ -62,7 +62,7 @@ impl Mul<f64> for Vector2D {
 
 impl Div<f64> for Vector2D {
     type Output = Vector2D;
-    #[inline]
+    #[inline(always)]
     fn div(self, rhs: f64) -> Self::Output {
         Self {
             x: self.x / rhs,
@@ -73,7 +73,7 @@ impl Div<f64> for Vector2D {
 
 impl Neg for Vector2D {
     type Output = Vector2D;
-    #[inline]
+    #[inline(always)]
     fn neg(self) -> Self::Output {
         Self {
             x: -self.x,
@@ -90,8 +90,8 @@ impl Sum for Vector2D {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Coordinates {
-    x: f64,
-    y: f64,
+    pub x: f64,
+    pub y: f64,
 }
 
 impl Coordinates {
@@ -117,7 +117,7 @@ impl Add<Vector2D> for Coordinates {
 pub struct Node {
     id: usize,
     pub loc: ShardedLock<Coordinates>,
-    weight: f64,
+    pub weight: f64,
     from: ShardedLock<Vec<Weak<Relation>>>,
     to: ShardedLock<Vec<Weak<Relation>>>,
 }
@@ -149,7 +149,7 @@ impl Node {
         *m = new;
     }
 
-    #[inline]
+    #[inline(always)]
     fn distance_squared(&self, other: &Self) -> f64 {
         let (self_x, self_y) = {
             let guard = self.loc.read().expect("Lock is poisoned");
@@ -169,12 +169,12 @@ impl Node {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     fn coloumb_force(&self, other: &Self, scale: f64) -> f64 {
         scale * (self.weight * other.weight) / self.distance_squared(other)
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn coloumb_vector(&self, other: &Self, scale: f64) -> Vector2D {
         let force = self.coloumb_force(other, scale);
         let direction = -self
@@ -186,7 +186,7 @@ impl Node {
         direction * force
     }
 
-    #[inline]
+    #[inline(always)]
     fn spring_vector(&self, scale: f64) -> Vector2D {
         let from_guard = self.from.read().unwrap();
         let to_guard = self.to.read().unwrap();
@@ -200,7 +200,7 @@ impl Node {
         from_iter.chain(to_iter).sum()
     }
 
-    #[inline]
+    #[inline(always)]
     fn compound_vector(
         &self,
         other: &[Arc<Self>],
@@ -218,9 +218,9 @@ impl Node {
 
 #[derive(Debug)]
 pub struct Relation {
-    weight_squared: f64,
-    from: Arc<Node>,
-    to: Arc<Node>,
+    pub weight_squared: f64,
+    pub from: Arc<Node>,
+    pub to: Arc<Node>,
 }
 
 impl Relation {
@@ -232,23 +232,23 @@ impl Relation {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     fn distance_squared(&self) -> f64 {
         self.from.distance_squared(&self.to)
     }
 
-    #[inline]
+    #[inline(always)]
     fn hook_force_squared(&self, scale: f64) -> f64 {
         let stretch = self.distance_squared();
         self.weight_squared * stretch * scale
     }
 
-    #[inline]
+    #[inline(always)]
     fn hook_force(&self, scale: f64) -> f64 {
         self.hook_force_squared(scale).sqrt()
     }
 
-    #[inline]
+    #[inline(always)]
     fn hook_vector(&self, scale: f64) -> Vector2D {
         let force = self.hook_force(scale);
         let direction = self

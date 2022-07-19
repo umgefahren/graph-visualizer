@@ -33,7 +33,7 @@ fn read_nodes<R: Read>(reader: R) -> std::io::Result<IntMap<usize, Arc<Node>>> {
     let mut rdr = csv::Reader::from_reader(reader);
 
     let mut res = IntMap::default();
-    let mut rng = rand::rngs::SmallRng::from_entropy();
+    let mut rng = rand::rngs::SmallRng::from_seed([0u8; 32]);
 
     for result in rdr.deserialize() {
         let record: NodeRecord = result?;

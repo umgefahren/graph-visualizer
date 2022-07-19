@@ -1,16 +1,23 @@
 use std::{
     ops::Range,
-    sync::{Arc, Barrier},
+    sync::{Arc, Barrier, RwLock},
     thread::{self, available_parallelism},
 };
 
-use crate::model::{Coordinates, Node, Relation};
+use crate::{
+    model::{Coordinates, Node, Relation},
+    render::{Element, Renderer},
+};
 
 use lazy_static::lazy_static;
 
 lazy_static! {
     static ref AVAILABLE_PARALLELISM: usize = available_parallelism().unwrap().get();
 }
+
+const SPING_SCALE: f64 = 1.0 / 200.0;
+const COLOUMB_SCALE: f64 = 1.0 / 1.0;
+const TIME_DELTA: f64 = 0.1;
 
 pub struct SimulationState {
     nodes: Arc<Vec<Arc<Node>>>,
@@ -25,7 +32,7 @@ impl SimulationState {
         }
     }
 
-    fn run_simulation_step(&self) -> std::io::Result<f64> {
+    fn run_simulation_step(&self, n: usize) -> std::io::Result<f64> {
         let thread_nums = *AVAILABLE_PARALLELISM;
         let nodes_len = self.nodes.len();
         let slice_len = nodes_len / thread_nums;
@@ -49,25 +56,33 @@ impl SimulationState {
             let local_barrier = barrier.clone();
             let handle = thread::spawn(move || {
                 let mut total_length = 0.0;
-                let new_coordinates: Vec<Coordinates> = local_nodes[range.clone()]
-                    .iter()
-                    .map(|e| (e, e.loc.read().unwrap().clone()))
-                    .map(|(e, c) | (e.calc_new_position(&local_nodes, 1.0, 1.0, 1.0), c))
-                    .map(|(new, old)| (new, new.to(old).length()))
-                    .map(|(new, length)| {
-                        if length.is_normal() {
-                            total_length += length.abs();
-                        }
-                        new
-                    })
-                    .collect();
-
-                local_barrier.wait();
-                local_nodes[range]
-                    .iter()
-                    .zip(new_coordinates.iter())
-                    .for_each(|(n, c)| n.update_coordinates(*c));
-                
+                let mut new_coordinates: Vec<Coordinates> = Vec::new();
+                for _ in 0..n {
+                    let iterator = local_nodes[range.clone()]
+                        .iter()
+                        .map(|e| (e, e.loc.read().unwrap().clone()))
+                        .map(|(e, c)| {
+                            (
+                                e.calc_new_position(&local_nodes, SPING_SCALE, COLOUMB_SCALE, TIME_DELTA),
+                                c,
+                            )
+                        })
+                        .map(|(new, old)| (new, new.to(old).length()))
+                        .map(|(new, length)| {
+                            if length.is_normal() {
+                                total_length += length.abs();
+                            }
+                            new
+                        });
+                    new_coordinates.clear();
+                    new_coordinates.extend(iterator);
+                    local_barrier.wait();
+                    local_nodes[range.clone()]
+                        .iter()
+                        .zip(new_coordinates.iter())
+                        .for_each(|(n, c)| n.update_coordinates(*c));
+                    local_barrier.wait();
+                }
                 total_length
             });
             handles.push(handle);
@@ -83,10 +98,21 @@ impl SimulationState {
     }
 
     pub fn run_n_steps(&self, n: usize) -> std::io::Result<f64> {
-        let mut last_change = 0.0;
-        for _ in 0..n {
-            last_change = self.run_simulation_step()?;
-        }
-        Ok(last_change)
+        self.run_simulation_step(n)
+    }
+
+    pub fn render(self, x: f64, y: f64) -> String {
+        let mut renderer = Renderer::new();
+        self.nodes
+            .iter()
+            .map(|e| Element::from(e.as_ref()))
+            .for_each(|e| renderer.add_element(e));
+
+        self.relations
+            .iter()
+            .map(|e| Element::from(e.as_ref()))
+            .for_each(|e| renderer.add_element(e));
+
+        renderer.render(x, y)
     }
 }

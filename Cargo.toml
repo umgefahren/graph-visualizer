@@ -12,3 +12,6 @@ nohash-hasher = "0.2.0"
 csv = "1.1.6"
 rand = { versino = "0.8", features = ["small_rng"] }
 lazy_static = "1"
+
+[profile.release]
+lto = true
