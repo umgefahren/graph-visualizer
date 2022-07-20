@@ -15,7 +15,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let state = SimulationState::new(nodes, relations);
 
     let start = Instant::now();
-    let last_change = state.run_n_steps(10000)?;
+    let last_change = state.run_n_steps(20000)?;
     let elapsed = start.elapsed();
     println!("Elapsed => {:?} Last Change => {last_change}", elapsed);
 

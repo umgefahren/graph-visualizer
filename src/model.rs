@@ -8,15 +8,15 @@ use crossbeam::sync::ShardedLock;
 
 #[derive(Copy, Clone, Debug)]
 pub struct Vector2D {
-    x: f64,
-    y: f64,
+    x: f32,
+    y: f32,
 }
 
 impl Vector2D {
     const ZERO: Self = Vector2D { x: 0.0, y: 0.0 };
 
     #[inline(always)]
-    fn scale(self, lambda: f64) -> Self {
+    fn scale(self, lambda: f32) -> Self {
         Self {
             x: self.x * lambda,
             y: self.y * lambda,
@@ -24,7 +24,7 @@ impl Vector2D {
     }
 
     #[inline(always)]
-    pub fn length(self) -> f64 {
+    pub fn length(self) -> f32 {
         (self.x.powi(2) + self.y.powi(2)).sqrt()
     }
 
@@ -35,7 +35,7 @@ impl Vector2D {
     }
 
     #[inline(always)]
-    fn travel(self, t: f64) -> Self {
+    fn travel(self, t: f32) -> Self {
         self * 0.5 * t.powi(2)
     }
 }
@@ -52,18 +52,18 @@ impl Add for Vector2D {
     }
 }
 
-impl Mul<f64> for Vector2D {
+impl Mul<f32> for Vector2D {
     type Output = Vector2D;
     #[inline(always)]
-    fn mul(self, rhs: f64) -> Self::Output {
+    fn mul(self, rhs: f32) -> Self::Output {
         self.scale(rhs)
     }
 }
 
-impl Div<f64> for Vector2D {
+impl Div<f32> for Vector2D {
     type Output = Vector2D;
     #[inline(always)]
-    fn div(self, rhs: f64) -> Self::Output {
+    fn div(self, rhs: f32) -> Self::Output {
         Self {
             x: self.x / rhs,
             y: self.y / rhs,
@@ -90,8 +90,8 @@ impl Sum for Vector2D {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Coordinates {
-    pub x: f64,
-    pub y: f64,
+    pub x: f32,
+    pub y: f32,
 }
 
 impl Coordinates {
@@ -117,13 +117,13 @@ impl Add<Vector2D> for Coordinates {
 pub struct Node {
     id: usize,
     pub loc: ShardedLock<Coordinates>,
-    pub weight: f64,
+    pub weight: f32,
     from: ShardedLock<Vec<Weak<Relation>>>,
     to: ShardedLock<Vec<Weak<Relation>>>,
 }
 
 impl Node {
-    pub fn new(id: usize, x: f64, y: f64, weight: f64) -> Self {
+    pub fn new(id: usize, x: f32, y: f32, weight: f32) -> Self {
         Self {
             id,
             loc: ShardedLock::new(Coordinates { x, y }),
@@ -136,9 +136,9 @@ impl Node {
     pub fn calc_new_position(
         &self,
         other: &[Arc<Self>],
-        spring_scale: f64,
-        coloumb_scale: f64,
-        t: f64,
+        spring_scale: f32,
+        coloumb_scale: f32,
+        t: f32,
     ) -> Coordinates {
         let offset = self.compound_vector(other, spring_scale, coloumb_scale);
         self.loc.read().unwrap().clone() + offset.travel(t)
@@ -150,7 +150,7 @@ impl Node {
     }
 
     #[inline(always)]
-    fn distance_squared(&self, other: &Self) -> f64 {
+    fn distance_squared(&self, other: &Self) -> f32 {
         let (self_x, self_y) = {
             let guard = self.loc.read().expect("Lock is poisoned");
             (guard.x, guard.y)
@@ -170,12 +170,12 @@ impl Node {
     }
 
     #[inline(always)]
-    fn coloumb_force(&self, other: &Self, scale: f64) -> f64 {
+    fn coloumb_force(&self, other: &Self, scale: f32) -> f32 {
         scale * (self.weight * other.weight) / self.distance_squared(other)
     }
 
     #[inline(always)]
-    pub fn coloumb_vector(&self, other: &Self, scale: f64) -> Vector2D {
+    pub fn coloumb_vector(&self, other: &Self, scale: f32) -> Vector2D {
         let force = self.coloumb_force(other, scale);
         let direction = -self
             .loc
@@ -187,7 +187,7 @@ impl Node {
     }
 
     #[inline(always)]
-    fn spring_vector(&self, scale: f64) -> Vector2D {
+    fn spring_vector(&self, scale: f32) -> Vector2D {
         let from_guard = self.from.read().unwrap();
         let to_guard = self.to.read().unwrap();
         let from_iter = from_guard
@@ -204,8 +204,8 @@ impl Node {
     fn compound_vector(
         &self,
         other: &[Arc<Self>],
-        spring_scale: f64,
-        coloumb_scale: f64,
+        spring_scale: f32,
+        coloumb_scale: f32,
     ) -> Vector2D {
         let tmp: Vector2D = other
             .iter()
@@ -218,13 +218,13 @@ impl Node {
 
 #[derive(Debug)]
 pub struct Relation {
-    pub weight_squared: f64,
+    pub weight_squared: f32,
     pub from: Arc<Node>,
     pub to: Arc<Node>,
 }
 
 impl Relation {
-    pub fn new(weight: f64, from: Arc<Node>, to: Arc<Node>) -> Self {
+    pub fn new(weight: f32, from: Arc<Node>, to: Arc<Node>) -> Self {
         Self {
             weight_squared: weight.powi(2),
             from,
@@ -233,23 +233,23 @@ impl Relation {
     }
 
     #[inline(always)]
-    fn distance_squared(&self) -> f64 {
+    fn distance_squared(&self) -> f32 {
         self.from.distance_squared(&self.to)
     }
 
     #[inline(always)]
-    fn hook_force_squared(&self, scale: f64) -> f64 {
+    fn hook_force_squared(&self, scale: f32) -> f32 {
         let stretch = self.distance_squared();
         self.weight_squared * stretch * scale
     }
 
     #[inline(always)]
-    fn hook_force(&self, scale: f64) -> f64 {
+    fn hook_force(&self, scale: f32) -> f32 {
         self.hook_force_squared(scale).sqrt()
     }
 
     #[inline(always)]
-    fn hook_vector(&self, scale: f64) -> Vector2D {
+    fn hook_vector(&self, scale: f32) -> Vector2D {
         let force = self.hook_force(scale);
         let direction = self
             .from
@@ -294,10 +294,10 @@ mod tests {
         let to = Arc::new(Node::new(1, 2.0, 2.0, 1.0));
         let relation = Relation::new(1.0, from, to);
         let force = relation.hook_force(1.0);
-        assert_eq!(force, 8.0f64.sqrt());
+        assert_eq!(force, 8.0f32.sqrt());
 
         let force_vector = relation.hook_vector(1.0);
-        assert_eq!(force_vector.length(), 8.0f64.sqrt());
+        assert_eq!(force_vector.length(), 8.0f32.sqrt());
         assert_eq!(force_vector.x, 2.0);
         assert_eq!(force_vector.y, 2.0);
     }

@@ -15,9 +15,9 @@ lazy_static! {
     static ref AVAILABLE_PARALLELISM: usize = available_parallelism().unwrap().get();
 }
 
-const SPING_SCALE: f64 = 1.0 / 200.0;
-const COLOUMB_SCALE: f64 = 1.0 / 1.0;
-const TIME_DELTA: f64 = 0.1;
+const SPING_SCALE: f32 = 1.0 / 200.0;
+const COLOUMB_SCALE: f32 = 1.0 / 1.0;
+const TIME_DELTA: f32 = 1.0;
 
 pub struct SimulationState {
     nodes: Arc<Vec<Arc<Node>>>,
@@ -32,7 +32,7 @@ impl SimulationState {
         }
     }
 
-    fn run_simulation_step(&self, n: usize) -> std::io::Result<f64> {
+    fn run_simulation_step(&self, n: usize) -> std::io::Result<f32> {
         let thread_nums = *AVAILABLE_PARALLELISM;
         let nodes_len = self.nodes.len();
         let slice_len = nodes_len / thread_nums;
@@ -97,11 +97,11 @@ impl SimulationState {
         Ok(change)
     }
 
-    pub fn run_n_steps(&self, n: usize) -> std::io::Result<f64> {
+    pub fn run_n_steps(&self, n: usize) -> std::io::Result<f32> {
         self.run_simulation_step(n)
     }
 
-    pub fn render(self, x: f64, y: f64) -> String {
+    pub fn render(self, x: f32, y: f32) -> String {
         let mut renderer = Renderer::new();
         self.nodes
             .iter()

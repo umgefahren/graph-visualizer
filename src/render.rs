@@ -24,7 +24,7 @@ impl Renderer {
         self.elements.push(element);
     }
 
-    pub fn render(self, x: f64, y: f64) -> String {
+    pub fn render(self, x: f32, y: f32) -> String {
         let outer_x = self.bounds.max_x - self.bounds.min_x;
         let outer_y = self.bounds.max_y - self.bounds.min_y;
 
@@ -53,16 +53,16 @@ impl Renderer {
 }
 
 pub enum Element {
-    Circle { radius: f64, x: f64, y: f64 },
-    Line { start: (f64, f64), stop: (f64, f64) },
-    Tag { content: String, x: f64, y: f64 },
+    Circle { radius: f32, x: f32, y: f32 },
+    Line { start: (f32, f32), stop: (f32, f32) },
+    Tag { content: String, x: f32, y: f32 },
 }
 
 struct Bounds {
-    min_x: f64,
-    max_x: f64,
-    min_y: f64,
-    max_y: f64,
+    min_x: f32,
+    max_x: f32,
+    min_y: f32,
+    max_y: f32,
 }
 
 impl Bounds {
@@ -98,7 +98,7 @@ impl Element {
         }
     }
 
-    pub fn render(&self, x_scale: f64, x_offset: f64, y_scale: f64, y_offset: f64) -> String {
+    pub fn render(&self, x_scale: f32, x_offset: f32, y_scale: f32, y_offset: f32) -> String {
         match self {
             Element::Circle { radius, x, y } => {
                 let (new_x, new_y) = ((x - x_offset) * x_scale, (y - y_offset) * y_scale);

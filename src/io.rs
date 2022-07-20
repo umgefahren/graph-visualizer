@@ -9,7 +9,7 @@ use crate::model::{Node, Relation};
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 struct NodeRecord {
     id: usize,
-    weight: f64,
+    weight: f32,
 }
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
@@ -17,12 +17,12 @@ struct RelationRecord {
     id: usize,
     from: usize,
     to: usize,
-    weight: f64,
+    weight: f32,
 }
 
-fn generate_coordinate<R: RngCore>(mut rng: R) -> f64 {
+fn generate_coordinate<R: RngCore>(mut rng: R) -> f32 {
     loop {
-        let tmp: f64 = rng.gen_range(0.0..100.0);
+        let tmp: f32 = rng.gen_range(0.0..100.0);
         if tmp.is_normal() {
             return tmp;
         }
