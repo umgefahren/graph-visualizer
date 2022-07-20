@@ -141,7 +141,7 @@ impl Node {
         t: f32,
     ) -> Coordinates {
         let offset = self.compound_vector(other, spring_scale, coloumb_scale);
-        self.loc.read().unwrap().clone() + offset.travel(t)
+        *self.loc.read().unwrap() + offset.travel(t)
     }
 
     pub fn update_coordinates(&self, new: Coordinates) {
@@ -161,12 +161,7 @@ impl Node {
         };
         let x_delta = (self_x - other_x).abs().powi(2);
         let y_delta = (self_y - other_y).abs().powi(2);
-        let res = x_delta + y_delta;
-        if res == 0.0 {
-            res
-        } else {
-            res
-        }
+        x_delta + y_delta
     }
 
     #[inline(always)]
@@ -181,7 +176,7 @@ impl Node {
             .loc
             .read()
             .unwrap()
-            .to(other.loc.read().unwrap().clone())
+            .to(*other.loc.read().unwrap())
             .normalize();
         direction * force
     }
@@ -210,7 +205,7 @@ impl Node {
         let tmp: Vector2D = other
             .iter()
             .filter(|e| e.id != self.id)
-            .map(|e| self.coloumb_vector(&e, coloumb_scale))
+            .map(|e| self.coloumb_vector(e, coloumb_scale))
             .sum();
         tmp + self.spring_vector(spring_scale)
     }
@@ -256,7 +251,7 @@ impl Relation {
             .loc
             .read()
             .unwrap()
-            .to(self.to.loc.read().unwrap().clone())
+            .to(*self.to.loc.read().unwrap())
             .normalize();
         direction * force
     }

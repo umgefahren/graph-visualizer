@@ -121,7 +121,7 @@ impl Element {
 impl From<&Node> for Element {
     fn from(n: &Node) -> Self {
 
-        let m = n.loc.read().unwrap().clone();
+        let m = *n.loc.read().unwrap();
         Element::Circle {
             radius: n.weight ,
             x: m.x,
@@ -132,8 +132,8 @@ impl From<&Node> for Element {
 
 impl From<&Relation> for Element {
     fn from(r: &Relation) -> Self {
-        let from = r.from.loc.read().unwrap().clone();
-        let to = r.to.loc.read().unwrap().clone();
+        let from = *r.from.loc.read().unwrap();
+        let to = *r.to.loc.read().unwrap();
         Element::Line {
             start: (from.x, from.y),
             stop: (to.x, to.y),

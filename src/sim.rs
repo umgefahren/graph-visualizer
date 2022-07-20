@@ -16,7 +16,7 @@ lazy_static! {
 }
 
 const SPING_SCALE: f32 = 1.0 / 200.0;
-const COLOUMB_SCALE: f32 = 1.0 / 1.0;
+const COLOUMB_SCALE: f32 = 1.0;
 const TIME_DELTA: f32 = 1.0;
 
 pub struct SimulationState {
@@ -60,7 +60,7 @@ impl SimulationState {
                 for _ in 0..n {
                     let iterator = local_nodes[range.clone()]
                         .iter()
-                        .map(|e| (e, e.loc.read().unwrap().clone()))
+                        .map(|e| (e, *e.loc.read().unwrap()))
                         .map(|(e, c)| {
                             (
                                 e.calc_new_position(&local_nodes, SPING_SCALE, COLOUMB_SCALE, TIME_DELTA),
