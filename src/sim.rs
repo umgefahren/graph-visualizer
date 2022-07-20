@@ -1,6 +1,6 @@
 use std::{
     ops::Range,
-    sync::{Arc, Barrier, RwLock},
+    sync::{Arc, Barrier},
     thread::{self, available_parallelism},
 };
 

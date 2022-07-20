@@ -55,6 +55,7 @@ impl Renderer {
 pub enum Element {
     Circle { radius: f32, x: f32, y: f32 },
     Line { start: (f32, f32), stop: (f32, f32) },
+    #[allow(dead_code)]
     Tag { content: String, x: f32, y: f32 },
 }
 
