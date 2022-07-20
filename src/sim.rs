@@ -1,6 +1,6 @@
 use std::{
-    ops::Range,
-    sync::{Arc, Barrier},
+    ops::{Range, Sub},
+    sync::Arc,
     thread::{self, available_parallelism},
 };
 
@@ -9,26 +9,39 @@ use crate::{
     render::{Element, Renderer},
 };
 
+
 use lazy_static::lazy_static;
 
 lazy_static! {
-    static ref AVAILABLE_PARALLELISM: usize = available_parallelism().unwrap().get();
+    static ref AVAILABLE_PARALLELISM: usize = available_parallelism().unwrap().get().sub(1).max(1);
 }
 
-const SPING_SCALE: f32 = 1.0 / 200.0;
-const COLOUMB_SCALE: f32 = 1.0;
-const TIME_DELTA: f32 = 1.0;
+pub const SPING_SCALE: f32 = 1.0 / 200.0;
+pub const COLOUMB_SCALE: f32 = 1.0;
+pub const TIME_DELTA: f32 = 1.0;
 
 pub struct SimulationState {
     nodes: Arc<Vec<Arc<Node>>>,
     relations: Arc<Vec<Arc<Relation>>>,
+    spring_scale: f32,
+    coloumb_scale: f32,
+    time_delta: f32,
 }
 
 impl SimulationState {
-    pub fn new(nodes: Vec<Arc<Node>>, relations: Vec<Arc<Relation>>) -> Self {
+    pub fn new(
+        nodes: Vec<Arc<Node>>,
+        relations: Vec<Arc<Relation>>,
+        spring_scale: f32,
+        coloumb_scale: f32,
+        time_delta: f32,
+    ) -> Self {
         Self {
             nodes: Arc::new(nodes),
             relations: Arc::new(relations),
+            spring_scale,
+            coloumb_scale,
+            time_delta,
         }
     }
 
@@ -49,11 +62,12 @@ impl SimulationState {
             .collect();
 
         let mut handles = Vec::new();
-        let barrier = Arc::new(Barrier::new(thread_nums));
+        let spring_scale = self.spring_scale;
+        let coloumb_scale = self.coloumb_scale;
+        let time_delta = self.time_delta;
 
         for range in ranges {
             let local_nodes = Arc::clone(&self.nodes);
-            let local_barrier = barrier.clone();
             let handle = thread::spawn(move || {
                 let mut total_length = 0.0;
                 let mut new_coordinates: Vec<Coordinates> = Vec::new();
@@ -63,7 +77,12 @@ impl SimulationState {
                         .map(|e| (e, *e.loc.read().unwrap()))
                         .map(|(e, c)| {
                             (
-                                e.calc_new_position(&local_nodes, SPING_SCALE, COLOUMB_SCALE, TIME_DELTA),
+                                e.calc_new_position(
+                                    &local_nodes,
+                                    spring_scale,
+                                    coloumb_scale,
+                                    time_delta,
+                                ),
                                 c,
                             )
                         })
@@ -76,12 +95,10 @@ impl SimulationState {
                         });
                     new_coordinates.clear();
                     new_coordinates.extend(iterator);
-                    local_barrier.wait();
                     local_nodes[range.clone()]
                         .iter()
                         .zip(new_coordinates.iter())
                         .for_each(|(n, c)| n.update_coordinates(*c));
-                    local_barrier.wait();
                 }
                 total_length
             });
